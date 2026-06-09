@@ -26,7 +26,7 @@ CrowdStrike retains only **~7 days** of device usage history — too short a win
 ## Requirements
 
 - **CrowdStrike Falcon** with **Device Control** and **NGSIEM** enabled
-- A Falcon **API client** with Device Control and NGSIEM read scopes
+- A Falcon **API client** with Device Control and NGSIEM read/write scopes
 
 ---
 
