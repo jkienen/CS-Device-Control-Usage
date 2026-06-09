@@ -27,8 +27,6 @@ CrowdStrike retains only **~7 days** of device usage history — too short a win
 
 - **CrowdStrike Falcon** with **Device Control** and **NGSIEM** enabled
 - A Falcon **API client** with Device Control and NGSIEM read scopes
-- **Python 3.9+**
-- USB / removable-storage events ingested into NGSIEM (`DcUsbDevice*`, `DcRemovableStorageDevice*`)
 
 ---
 
@@ -68,18 +66,7 @@ SECRET_ID="your-falcon-client-secret"
 
 The pipeline has three scripts. Run them in order:
 
-### 1. `Extract_USB_Devices.py` — collect the allowlist
-
-Pulls **every Device Control policy** and lists **all USB exceptions** defined inside them (vendor/product/serial, match method, action, policy context).
-
-```bash
-python Scripts/Falcon/Extract_USB_Devices.py
-```
-→ `Datas/Entry/Device-Control-USB-Exceptions_<date>.csv`
-
-> ⚠️ Collects only exceptions defined **within policies**. **CID-level (Custom) exceptions** are not retrieved and must be accounted for separately if your environment uses them.
-
-### 2. `Extract_Weekly_Usage.py` — collect real usage *(schedule weekly)*
+### 1. `Extract_Weekly_Usage.py` — collect real usage *(schedule weekly)*
 
 Runs an **NGSIEM query** for the last **7 days** of USB / removable-storage activity (connections, policy violations, blocks), then merges it into the accumulated usage file — de-duplicating and applying the **6-month retention** window.
 
@@ -87,6 +74,17 @@ Runs an **NGSIEM query** for the last **7 days** of USB / removable-storage acti
 python Scripts/Falcon/Extract_Weekly_Usage.py
 ```
 → `Datas/Entry/Device-Control-Usage_<range>.csv`
+
+### 2. `Extract_USB_Devices.py` — collect the allowlist
+
+Pulls **every Device Control policy** and lists **all USB exceptions** defined inside them (vendor/product/serial, match method, action, policy context).
+
+```bash
+python Scripts/Falcon/Extract_USB_Devices.py
+```
+→ `Datas/Entry/Device-Control-USB-Exceptions.csv`
+
+> ⚠️ Collects only exceptions defined **within policies**. **CID-level (Custom) exceptions** are not retrieved and must be accounted for separately if your environment uses them.
 
 ### 3. `Generate_USB-Audit-Usage.py` — run the audit
 
