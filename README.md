@@ -17,7 +17,7 @@ This toolkit correlates two data sources from the Falcon platform — the **allo
 CrowdStrike retains only **~7 days** of device usage history — too short a window to tell whether an exception is genuinely unused. The toolkit works around this with a two-stage pipeline:
 
 - **Stage 1 — Collect.** A weekly job pulls the latest 7-day window of USB activity and appends it to an accumulated dataset (retained up to **6 months**), building the long-term history Falcon itself doesn't keep. A second job snapshots the current exception allowlist.
-- **Stage 2 — Audit.** Once enough history exists (**3 months** by default, configurable), the audit cross-references the allowlist against real usage and flags each exception as active or dormant.
+- **Stage 2 — Audit.** The audit cross-references the allowlist against whatever usage history has accumulated and flags each exception as active or dormant. It can be run at any time; the report records how many days of history it was based on (`Usage History (Days)`) so results can be interpreted accordingly.
 
 > ⏳ **Run the weekly collector consistently.** Because Falcon keeps only ~7 days, any missed week becomes a permanent gap in the history — and the audit is only as good as the history behind it.
 
@@ -44,11 +44,10 @@ source .venv/bin/activate        # Linux / macOS
 pip install -r Scripts/requirements.txt
 ```
 
-<table width="100%">
-<tr><th width="30%" align="left">Dependency</th><th width="70%" align="left">Purpose</th></tr>
-<tr><td><code>crowdstrike-falconpy</code></td><td>Official CrowdStrike Falcon SDK (Device Control + NGSIEM APIs)</td></tr>
-<tr><td><code>python-dotenv</code></td><td>Loads API credentials from <code>.env</code></td></tr>
-</table>
+| Dependency | Purpose |
+|---|---|
+| `crowdstrike-falconpy` | Official CrowdStrike Falcon SDK (Device Control + NGSIEM APIs) |
+| `python-dotenv` | Loads API credentials from `.env` |
 
 ### 2. API credentials
 
@@ -96,11 +95,11 @@ python Scripts/Generate_USB-Audit-Usage.py
 ```
 → `Datas/<YYYY-MM>/Device_USB-Audit-Usage.csv`
 
-> 🔧 The required history depth is set by `BASE_TIME` at the top of the script (**3 months** by default) — edit it to taste.
+> 🔧 The audit can be run at any time — there is no minimum history requirement. The report includes a `Usage History (Days)` column showing how many days of accumulated usage the result is based on.
 >
 > ✅ The audit matches all three exception types: **`COMBINED_ID`** (by `Device Combined Id`), **`VID_PID_SERIAL`** (by vendor + product + serial), and **`VID_PID`** (by vendor + product). `VID_PID` matches are broader by nature — any device sharing that vendor/product counts as usage.
 
-**Suggested cadence:** schedule step 2 **weekly**; refresh step 1 whenever you audit; run step 3 **monthly**, once `BASE_TIME` months of history have accumulated.
+**Suggested cadence:** schedule step 2 **weekly**; refresh step 1 whenever you audit; run step 3 **monthly** — the more history accumulated, the more reliable the active/dormant verdict.
 
 ---
 
@@ -113,6 +112,7 @@ The generated `Device_USB-Audit-Usage.csv` includes the full exception definitio
 
 | Field | Description |
 |---|---|
+| `Usage History (Days)` | Number of days of accumulated usage history the audit is based on (span between the oldest and newest usage record) |
 | `Is Active` | `True` if the device was seen with `Full access` usage |
 | `Last Seen` | Most recent usage timestamp for the device |
 | `Last Connected Machines` | Hostnames that connected the device |

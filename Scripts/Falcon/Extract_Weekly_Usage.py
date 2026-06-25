@@ -4,6 +4,7 @@
 import os
 import time
 import datetime
+import requests
 import pandas as pd
 from falconpy import NGSIEM
 
@@ -41,7 +42,7 @@ NGSIEM_QUERY = """
 
 
 
-#################################### Part 1: Obtaining Authorization ->
+#################################### Part 1: Obtaining Authorization Token ->
 
 # Data obtained from project file
 from dotenv import load_dotenv
@@ -50,19 +51,59 @@ if os.path.exists(env_path):
     load_dotenv(env_path)
 
     # Get .env variables
+    BASE_URL = os.getenv("BASE_URL")
     CLIENT_ID = os.getenv("CLIENT_ID")
     SECRET_ID = os.getenv("SECRET_ID")
+    IDENTITY = "api__crowdstrike-datascience"
+    
+    # If valid itens
+    if BASE_URL and CLIENT_ID and SECRET_ID:
 
-    # If valid items
-    if CLIENT_ID and SECRET_ID:
+        url = f"{BASE_URL}/api/oauth2/token"
 
-        falcon = NGSIEM(client_id=CLIENT_ID, client_secret=SECRET_ID)
+        payload = {
+            "grant_type": "client_credentials",
+            "client_id": CLIENT_ID,
+            "client_secret": SECRET_ID
+        }
+
+        headers_auth = {"Content-Type": "application/x-www-form-urlencoded"}
+
+        response_auth = requests.post(url, data=payload, headers=headers_auth).json()
+        TOKEN = response_auth["access_token"]
 
 
 
-        #################################### Part 2: Executing NGSIEM Query ->
+        #################################### Part 2: Obtaining Authorization Secrets ->
 
+        url = f"{BASE_URL}/iso/dapp/application"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {TOKEN}"
+        }
+
+        secret = {}
+        secrets = requests.get(url, headers=headers).json()["application"]["secrets"]
+        for i in secrets:
+            if i["identity"] == IDENTITY: secret = i["data"][0]
+ 
+        
+
+        #################################### Part 3: Obtaining Falcon Authorization Token ->
+
+        # Init extract data
         try:
+
+            # Define local variables
+            CLIENT_ID = secret["CLIENT_ID"]
+            SECRET_ID = secret["SECRET_ID"]
+
+            falcon = NGSIEM(client_id=CLIENT_ID, client_secret=SECRET_ID)
+
+
+
+            #################################### Part 4: Executing NGSIEM Query ->
 
             # Start the search job
             response_start = falcon.start_search(repository="search-all", query_string=NGSIEM_QUERY, start=start_ms, end=end_ms)
@@ -70,7 +111,7 @@ if os.path.exists(env_path):
             if response_start["status_code"] != 200:
                 print(f"API returned status code {response_start['status_code']}. Please validate your token (CLIENT_ID / SECRET_ID).")
                 raise SystemExit(1)
-  
+
             # Poll until the job is complete
             while True:
                 response_status = falcon.get_search_status(repository="search-all", id=response_start["resources"]["id"])
@@ -81,7 +122,7 @@ if os.path.exists(env_path):
 
 
 
-            #################################### Part 3: Data Processing ->
+            #################################### Part 5: Data Processing ->
 
             records = []
             empty = "-"
@@ -110,7 +151,7 @@ if os.path.exists(env_path):
 
 
 
-            #################################### Part 4: Data Saving ->
+            #################################### Part 6: Data Saving ->
 
             df_new = pd.DataFrame(records)
             datas_dir = os.path.join(current_dir, "../../Datas/Entry")
@@ -126,7 +167,7 @@ if os.path.exists(env_path):
             if existing_file:
                 df_existing = pd.read_csv(existing_file, encoding="utf-8")
                 df = pd.concat([df_existing, df_new], ignore_index=True)
-                df = df.drop_duplicates(subset=["Date", "Device Id", "Computer Name"], keep="first")
+                df = df.drop_duplicates(subset=["Date", "Device Combined Id", "Computer Name"], keep="first")
             else: df = df_new
 
             # Apply retention: drop records older than 6 months
