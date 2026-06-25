@@ -44,10 +44,11 @@ source .venv/bin/activate        # Linux / macOS
 pip install -r Scripts/requirements.txt
 ```
 
-| Dependency | Purpose |
-|---|---|
-| `crowdstrike-falconpy` | Official CrowdStrike Falcon SDK (Device Control + NGSIEM APIs) |
-| `python-dotenv` | Loads API credentials from `.env` |
+<table width="100%">
+<tr><th width="30%" align="left">Dependency</th><th width="70%" align="left">Purpose</th></tr>
+<tr><td><code>crowdstrike-falconpy</code></td><td>Official CrowdStrike Falcon SDK (Device Control + NGSIEM APIs)</td></tr>
+<tr><td><code>python-dotenv</code></td><td>Loads API credentials from <code>.env</code></td></tr>
+</table>
 
 ### 2. API credentials
 
