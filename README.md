@@ -2,6 +2,19 @@
 
 > A reporting toolkit that audits CrowdStrike **Device Control USB exceptions** (the allowlist) against **real-world device usage**, surfacing which exceptions are actually in use and which are dormant, so stale allowlist entries can be reviewed and revoked.
 
+<p align="center">
+  <img src="Files/usb-audit-report.png" alt="Example USB audit report: each Device Control exception with its Active/Dormant verdict, last-seen date, connected machines, and match method.">
+</p>
+
+<table width="100%">
+<thead>
+<tr><th align="left">Before<div><img width="300" height="1" alt=""></div></th><th align="left">Now<div><img width="300" height="1" alt=""></div></th><th align="left">What it buys<div><img width="400" height="1" alt=""></div></th></tr>
+</thead>
+<tbody>
+<tr><td>~7 days of usage history — too short a window to know if an exception is still used</td><td>a 6-month rolling history built weekly, cross-referenced against the live allowlist</td><td>stale exceptions found and ready for review instead of sitting open indefinitely</td></tr>
+</tbody>
+</table>
+
 ---
 
 ## Overview
@@ -9,8 +22,6 @@
 CrowdStrike Device Control lets you create **exceptions** to allow specific USB devices past your block policy. Over time these allowlists grow, and nobody knows which exceptions are still being used. Every unused exception is an open door that no longer needs to be open.
 
 This toolkit correlates two data sources from the Falcon platform, the **allowlist** (what is permitted) and the **real usage** (what was actually plugged in), and produces a periodic audit that flags each exception as **active** or **dormant**, turning USB least-privilege hygiene from a guess into evidence.
-
----
 
 ## How It Works
 
@@ -23,14 +34,16 @@ CrowdStrike retains only **~7 days** of device usage history, too short a window
 
 ---
 
-## Requirements
+<details>
+<summary><strong>Requirements</strong> (click to expand)</summary>
 
 - **CrowdStrike Falcon** with **Device Control** and **NGSIEM** enabled
 - A Falcon **API client** with Device Control and NGSIEM read/write scopes
 
----
+</details>
 
-## Setup
+<details>
+<summary><strong>Setup</strong> (click to expand)</summary>
 
 ### 1. Environment and dependencies
 
@@ -66,24 +79,21 @@ SECRET_ID="your-falcon-client-secret"
 
 > ⚠️ **Never commit `.env`.** Add it to `.gitignore`. If credentials were ever committed, revoke and rotate them in the Falcon console.
 
----
+</details>
 
-## Usage
+<details>
+<summary><strong>Usage</strong> (click to expand)</summary>
 
 The pipeline has three scripts. Run them in order:
 
-### 1. `Extract_Weekly_Usage.py`: collect real usage *(schedule weekly)*
-
-Runs an **NGSIEM query** for the last **7 days** of USB / removable-storage activity (connections, policy violations, blocks), then merges it into the accumulated usage file, de-duplicating and applying the **6-month retention** window.
+### 1. `Extract_Weekly_Usage.py` *(schedule weekly)*
 
 ```bash
 python Scripts/Falcon/Extract_Weekly_Usage.py
 ```
 → `Datas/Entry/Device-Control-Usage_<range>.csv`
 
-### 2. `Extract_USB_Devices.py`: collect the allowlist
-
-Pulls **every Device Control policy** and lists **all USB exceptions** defined inside them (vendor/product/serial, match method, action, policy context).
+### 2. `Extract_USB_Devices.py`
 
 ```bash
 python Scripts/Falcon/Extract_USB_Devices.py
@@ -92,9 +102,7 @@ python Scripts/Falcon/Extract_USB_Devices.py
 
 > ⚠️ Collects only exceptions defined **within policies**. **CID-level (Custom) exceptions** are not retrieved and must be accounted for separately if your environment uses them.
 
-### 3. `Generate_USB-Audit-Usage.py`: run the audit
-
-Cross-references the allowlist against the accumulated usage, flagging each exception as **active** (seen with `Full access` usage) or **dormant**, and enriching it with last-seen date and the machines that connected it.
+### 3. `Generate_USB-Audit-Usage.py`
 
 ```bash
 python Scripts/Generate_USB-Audit-Usage.py
@@ -107,13 +115,12 @@ python Scripts/Generate_USB-Audit-Usage.py
 
 **Suggested cadence:** schedule step 2 **weekly**; refresh step 1 whenever you audit; run step 3 **monthly**. The more history accumulated, the more reliable the active/dormant verdict.
 
----
+</details>
 
-## Audit Report Fields
+<details>
+<summary><strong>Audit Report Fields</strong> (click to expand)</summary>
 
 The generated `Device_USB-Audit-Usage.csv` includes the full exception definition plus the usage-derived columns:
-
-![Example USB audit report](Files/usb-audit-report.png)
 
 <table width="100%">
 <thead>
@@ -135,9 +142,10 @@ The generated `Device_USB-Audit-Usage.csv` includes the full exception definitio
 </tbody>
 </table>
 
----
+</details>
 
-## File Structure
+<details>
+<summary><strong>File Structure</strong> (click to expand)</summary>
 
 ```
 Crowdstrike-USB-Device-Control-Usage/
@@ -155,12 +163,15 @@ Crowdstrike-USB-Device-Control-Usage/
     └── usb-audit-report.png           # Example: generated USB audit report
 ```
 
----
+</details>
 
-## Roadmap / Next Steps
+<details>
+<summary><strong>Roadmap / Next Steps</strong> (click to expand)</summary>
 
 - **Automated cleanup.** Once the environment is well understood and the audit is trusted, a script that automatically **removes dormant exceptions** via the Device Control API, closing the loop from *detection* to *remediation*.
 - **Include CID-level exceptions** in the allowlist extract for full coverage.
+
+</details>
 
 ---
 
