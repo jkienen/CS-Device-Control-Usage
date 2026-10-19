@@ -177,4 +177,4 @@ Crowdstrike-USB-Device-Control-Usage/
 
 ## License
 
-This toolkit is provided as-is for reference and reuse. Adapt it freely to your environment.
+This toolkit is released under the MIT License: use, adapt and redistribute it freely. Full terms in [LICENCE.md](LICENCE.md).
